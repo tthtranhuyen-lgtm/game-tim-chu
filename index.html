@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tìm Chữ Khác Biệt - Dễ Thương</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap');
+
+        :root {
+            --grid-gap: 4px;
+            --cols: 3;
+            --primary-color: #ff85a2;
+            --secondary-color: #ffb3c6;
+            --text-color: #4a4a4a;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #fce4ec 0%, #e3f2fd 100%);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Hiệu ứng mây bay lơ lửng */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            filter: blur(10px);
+            z-index: -1;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        .cloud1 { width: 150px; height: 150px; top: 10%; left: -50px; animation-duration: 12s; }
+        .cloud2 { width: 100px; height: 100px; bottom: 20%; right: -20px; animation-duration: 8s; }
+        .cloud3 { width: 80px; height: 80px; top: 40%; right: 10%; animation-duration: 15s; }
+
+        @keyframes float {
+            0% { transform: translateY(0) translateX(0); }
+            100% { transform: translateY(-20px) translateX(20px); }
+        }
+
+        header {
+            text-align: center;
+            padding: 15px 20px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(255, 133, 162, 0.2);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-title { flex-grow: 1; }
+        h1 { margin: 0; color: var(--primary-color); font-size: 22px; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); }
+        .level-display { font-size: 16px; font-weight: bold; color: #7b2cbf; margin-top: 5px; }
+
+        /* Nút bật tắt âm thanh */
+        .sound-btn {
+            background: none; border: none; font-size: 24px; cursor: pointer;
+            padding: 10px; transition: transform 0.2s;
+        }
+        .sound-btn:hover { transform: scale(1.1); }
+
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(var(--cols), 1fr);
+            gap: var(--grid-gap);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            padding: 12px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(255, 133, 162, 0.3), inset 0 0 15px rgba(255,255,255,0.5);
+            width: 100%;
+            max-width: 650px;
+            aspect-ratio: 1 / 1;
+            box-sizing: border-box;
+            border: 4px solid white;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: clamp(16px, 5vw, 45px);
+            color: var(--text-color);
+            font-family: 'KaiTi', 'SimSun', serif; /* Font chữ Hán */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .cell:hover { background-color: #fff0f3; transform: translateY(-2px); }
+        .cell:active { transform: scale(0.9); }
+
+        /* Hiệu ứng khi click sai */
+        .wrong {
+            background-color: #ff4d6d !important;
+            color: white;
+            animation: shake 0.4s;
+        }
+
+        /* Hiệu ứng khi click đúng */
+        .correct {
+            background-color: #b9fbc0 !important;
+            color: #2b9348;
+            transform: scale(1.15);
+            box-shadow: 0 0 20px #b9fbc0;
+            z-index: 2;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-6px) rotate(-5deg); }
+            50% { transform: translateX(6px) rotate(5deg); }
+            75% { transform: translateX(-6px) rotate(-5deg); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Màn hình chúc mừng */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .overlay-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(255, 133, 162, 0.4);
+            border: 4px solid var(--secondary-color);
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5) translateY(50px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        button.restart-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: bold;
+            background: linear-gradient(135deg, #ff85a2, #ff4d6d);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 77, 109, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button.restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 77, 109, 0.6);
+        }
+
+        @media (max-width: 600px) {
+            .cell { font-size: clamp(12px, 5vw, 35px); border-radius: 6px; }
+            #board { gap: 2px; padding: 6px; border-radius: 15px; border-width: 2px; }
+            h1 { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mây trang trí -->
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    <div class="cloud cloud3"></div>
+
+    <header>
+        <div class="header-title">
+            <h1>Tìm Chữ Khác Biệt 🌸</h1>
+            <div class="level-display">Cấp độ: <span id="level-text">1</span> / 13</div>
+        </div>
+        <button id="sound-toggle" class="sound-btn" title="Bật/Tắt âm thanh">🔊</button>
+    </header>
+
+    <div class="game-container">
+        <div id="board"></div>
+    </div>
+
+    <div id="overlay">
+        <div class="overlay-content">
+            <h2 style="color: #ff4d6d; font-size: 32px; margin-top: 0;">🎉 XUẤT SẮC! 🎉</h2>
+            <p style="font-size: 18px; color: #4a4a4a;">Bạn đã là Bậc Thầy Tìm Chữ!</p>
+            <p style="font-size: 40px; margin: 10px 0;">🏆</p>
+            <button class="restart-btn" onclick="startGame()">Chơi Lại Nào!</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH ÂM THANH (Web Audio API) ---
+        let audioCtx;
+        let isMuted = false;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, vol) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (type === 'click') playTone(600, 'sine', 0.1, 0.1);
+            if (type === 'correct') {
+                playTone(800, 'sine', 0.1, 0.2);
+                setTimeout(() => playTone(1200, 'sine', 0.2, 0.2), 100);
+            }
+            if (type === 'wrong') {
+                playTone(200, 'sawtooth', 0.2, 0.1);
+                setTimeout(() => playTone(150, 'sawtooth', 0.2, 0.1), 100);
+            }
+            if (type === 'win') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => playTone(freq, 'sine', 0.3, 0.2), i * 150);
+                });
+            }
+        }
+
+        // Nút bật tắt âm thanh
+        const soundBtn = document.getElementById('sound-toggle');
+        soundBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            soundBtn.innerText = isMuted ? '🔇' : '🔊';
+            if (!isMuted) playSound('click');
+        });
+
+        // --- CẤU HÌNH CẤP ĐỘ (Đã thêm 吃, 喝, 买) ---
+        const levels = [
+            { cols: 3, base: "山", diff: "出" }, 
+            { cols: 4, base: "吃", diff: "汽" }, // MỚI: Ăn vs Hơi nước (Khác bộ thủ Khẩu/Thủy)
+            { cols: 5, base: "今", diff: "令" }, 
+            { cols: 6, base: "喝", diff: "渴" }, // MỚI: Uống vs Khát (Khác bộ thủ Khẩu/Thủy)
+            { cols: 7, base: "回", diff: "田" }, 
+            { cols: 8, base: "买", diff: "卖" }, // MỚI: Mua vs Bán (Khác phần đầu)
+            { cols: 9, base: "漫", diff: "慢" }, 
+            { cols: 10, base: "纪", diff: "记" }, 
+            { cols: 11, base: "假", diff: "暇" }, 
+            { cols: 12, base: "未", diff: "末" },
+            { cols: 13, base: "己", diff: "已" },
+            { cols: 14, base: "拔", diff: "拨" }
+        ];
+
+        let currentLevel = 0;
+        const boardEl = document.getElementById('board');
+        const levelTextEl = document.getElementById('level-text');
+        const overlayEl = document.getElementById('overlay');
+
+        function startGame() {
+            currentLevel = 0;
+            overlayEl.style.display = 'none';
+            initAudio(); // Khởi tạo âm thanh khi bấm nút
+            loadLevel();
+        }
+
+        function loadLevel() {
+            if (currentLevel >= levels.length) {
+                overlayEl.style.display = 'flex';
+                playSound('win');
+                return;
+            }
+
+            const config = levels[currentLevel];
+            levelTextEl.innerText = currentLevel + 1;
+            
+            boardEl.style.setProperty('--cols', config.cols);
+            // Thu nhỏ khoảng cách khi bàn cờ to ra
+            const gap = config.cols > 9 ? 1 : (config.cols > 6 ? 2 : 4);
+            boardEl.style.setProperty('--grid-gap', gap + 'px');
+
+            boardEl.innerHTML = '';
+            const totalCells = config.cols * config.cols;
+            const diffIndex = Math.floor(Math.random() * totalCells);
+
+            for (let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                
+                if (i === diffIndex) {
+                    cell.innerText = config.diff;
+                    cell.dataset.isDiff = "true";
+                } else {
+                    cell.innerText = config.base;
+                    cell.dataset.isDiff = "false";
+                }
+
+                // Thêm hiệu ứng âm thanh nhỏ khi lướt qua (tùy chọn)
+                // cell.addEventListener('mouseenter', () => playSound('click'));
+
+                cell.addEventListener('click', handleCellClick);
+                boardEl.appendChild(cell);
+            }
+        }
+
+        function handleCellClick(e) {
+            const cell = e.target;
+            const isDiff = cell.dataset.isDiff === "true";
+
+            if (isDiff) {
+                playSound('correct');
+                cell.classList.add('correct');
+                // Vô hiệu hóa click các ô khác
+                document.querySelectorAll('.cell').forEach(c => c.style.pointerEvents = 'none');
+                
+                setTimeout(() => {
+                    currentLevel++;
+                    loadLevel();
+                }, 500);
+            } else {
+                playSound('wrong');
+                cell.classList.add('wrong');
+                setTimeout(() => {
+                    cell.classList.remove('wrong');
+                }, 400);
+            }
+        }
+
+        window.onload = startGame;
+    </script>
+</body>
+</html>
